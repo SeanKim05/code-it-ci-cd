@@ -1,16 +1,17 @@
-name: Run Jest Tests
+name: Build and Test on Pull Request
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
 
     steps:
       - name: Checkout code
@@ -19,10 +20,14 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "18.x"
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
 
       - name: Install dependencies
         run: npm install
 
-      - name: Run Jest tests
-        run: npm test
+      - name: Run Build
+        run: npm run build
+
+      - name: Run Tests
+        run: npm run test
