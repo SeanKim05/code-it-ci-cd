@@ -10,7 +10,7 @@ export default function Page() {
         <title>Sentry Onboardinfdadsfadsg</title>
         <meta
           name="description"
-          content="Test Sentry ford your Next.jss app!"
+          content="Test Sentry ford your Next.jss adasdaspp!"
         />
       </Head>
 
