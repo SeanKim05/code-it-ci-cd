@@ -1,67 +1,56 @@
 version: 2.1
-orbs:
-  node: circleci/node@5
-executors:
-  node-executor:
-    docker:
-      - image: circleci/node:18 # Updated to use latest Node 18.x version
+
 jobs:
-  test-node:
-    executor: node-executor
+  run-cypress-tests:
+    docker:
+      - image: cimg/node:18.16.1 # Use Node.js version 18.16.1
+    parameters:
+      cypress-command:
+        type: string
+        default: "npx cypress run" # Default command to run Cypress tests
+      start-command:
+        type: string
+        default: "" # Command to start the server (optional)
+      working-directory:
+        type: string
+        default: "." # Default working directory
     steps:
       - checkout
-      - node/install-packages:
-          pkg-manager: npm
-      - run:
-          command: npm install jest-junit
-      - run:
-          name: Run tests
-          command: npm run test --ci --runInBand --reporters=default --reporters=jest-junit
-      - store_test_results:
-          path: ./test-results/
 
-  build-node:
-    executor: node-executor
-    steps:
-      - checkout
-      - node/install-packages:
-          pkg-manager: npm
+      # Set the working directory
       - run:
-          command: npm run build
-      - run:
-          name: Create the ~/artifacts directory if it doesn't exist
-          command: mkdir -p ~/artifacts
-      - run:
-          name: Copy artifacts
-          command: cp -R build dist public .output .next .docusaurus ~/artifacts 2>/dev/null || true
-      - store_artifacts:
-          path: ~/artifacts
-          destination: node-build
+          name: Change Working Directory
+          command: cd << parameters.working-directory >>
 
-  cypress-test:
-    executor: node-executor
-    steps:
-      - checkout
-      - node/install-packages:
-          pkg-manager: npm
+      # Install Node.js dependencies
       - run:
-          name: Build and Start Production Server
-          command: npm run build && npm run start
+          name: Install Dependencies
+          command: npm install
+
+      # Optionally start the server if start-command is provided
+      - run:
+          name: Start Server
+          command: |
+            if [ -n "<< parameters.start-command >>" ]; then
+              << parameters.start-command >> &
+            fi
           background: true
+
+      # Wait for the server to be ready
       - run:
-          name: Wait for Local Server
-          command: npx wait-on http://localhost:3000
+          name: Wait for Server
+          command: npx wait-on https://code-it-ci-mk9n5qeoi-seankim05s-projects.vercel.app/ # Adjust the URL as needed
+
+      # Run Cypress tests
       - run:
           name: Run Cypress Tests
-          command: npx cypress run
+          command: << parameters.cypress-command >>
 
 workflows:
-  build-and-test:
+  version: 2
+  test:
     jobs:
-      - test-node
-      - build-node:
-          requires:
-            - test-node
-      - cypress-test:
-          requires:
-            - build-node
+      - run-cypress-tests:
+          cypress-command: "npx cypress run" # You can override this if needed
+          start-command: "npm run build && npm run start" # Server start command
+          working-directory: "." # Directory containing the package.json
