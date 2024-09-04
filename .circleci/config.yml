@@ -65,12 +65,7 @@ jobs:
           background: true
       - run:
           name: Wait for Local Server
-          command: |
-            npx wait-on http://localhost:3000 --timeout 1200000  # 20 minutes timeout
-            while ! curl --silent http://localhost:3000 > /dev/null; do
-              echo "Waiting for the server to start..."
-              sleep 5
-            done
+          command: npx wait-on http://localhost:3000
       - run:
           name: Run Cypress Tests
           command: << parameters.cypress-command >>
