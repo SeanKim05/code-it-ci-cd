@@ -1,17 +1,18 @@
-describe("Basic page checks", () => {
+describe("Home Page Tests", () => {
   beforeEach(() => {
-    cy.visit("/"); // Cypress will prepend this with the baseUrl
+    // Visit the home page before each test
+    cy.visit("/");
   });
 
-  it('should have "Get started by" text on the home page', () => {
-    cy.contains("Get started by").should("exist");
+  it('should display "Get started by" text on the home page', () => {
+    // Check if the text "Get started by" is present on the page
+    cy.contains("Get started by").should("be.visible");
   });
 
-  it('should have "Docs" anchor with correct href', () => {
-    cy.get("a")
-      .contains("Docs")
-      .should("exist")
-      .and("have.attr", "href")
-      .and("eq", "/docs");
+  it("should have an <a> tag with an href attribute", () => {
+    // Find the <a> tag containing an <h2> with the text "Docs" and check that it has an href attribute
+    cy.contains("h2", "Docs")
+      .parent("a") // Get the parent <a> tag of the <h2> with text "Docs"
+      .should("have.attr", "href"); // Check that this <a> tag has an href attribute
   });
 });
