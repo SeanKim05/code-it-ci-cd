@@ -1,11 +1,12 @@
 version: 2.1
 orbs:
   node: circleci/node@5
+
 executors:
   node-executor:
     docker:
       - image: cimg/node:18.16.1 # Use the cimg image with Node.js 18.16.1
-    no_output_timeout: 20m # Increase the no output timeout
+
 jobs:
   test-node:
     executor: node-executor
