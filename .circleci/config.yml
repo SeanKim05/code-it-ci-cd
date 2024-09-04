@@ -1,12 +1,14 @@
-# This config was automatically generated from your source code
-# Stacks detected: cicd:github-actions:.github/workflows,deps:node:.,test:jest:
 version: 2.1
 orbs:
   node: circleci/node@5
+executors:
+  node-executor:
+    docker:
+      - image: circleci/node:18.17.0 # Use Node.js version 18.17.0
 jobs:
   test-node:
     # Install node dependencies and run tests
-    executor: node/default
+    executor: node-executor
     environment:
       JEST_JUNIT_OUTPUT_DIR: ./test-results/
     steps:
@@ -20,9 +22,10 @@ jobs:
           command: npm run test --ci --runInBand --reporters=default --reporters=jest-junit
       - store_test_results:
           path: ./test-results/
+
   build-node:
     # Build node project
-    executor: node/default
+    executor: node-executor
     steps:
       - checkout
       - node/install-packages:
@@ -39,18 +42,25 @@ jobs:
       - store_artifacts:
           path: ~/artifacts
           destination: node-build
-  deploy:
-    # This is an example deploy job, not actually used by the workflow
-    docker:
-      - image: cimg/base:stable
+
+  cypress-test:
+    # Run Cypress tests
+    executor: node-executor
     steps:
-      # Replace this with steps to deploy to users
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
       - run:
-          name: deploy
-          command: '#e.g. ./deploy.sh'
+          name: Build and Start Production Server
+          command: npm run build && npm run start
+          background: true
       - run:
-          name: found github actions config
-          command: ':'
+          name: Wait for Local Server
+          command: npx wait-on http://localhost:3000 # Adjust port if necessary
+      - run:
+          name: Run Cypress Tests
+          command: npx cypress run
+
 workflows:
   build-and-test:
     jobs:
@@ -58,6 +68,6 @@ workflows:
       - build-node:
           requires:
             - test-node
-    # - deploy:
-    #     requires:
-    #       - build-node
+      - cypress-test:
+          requires:
+            - build-node
