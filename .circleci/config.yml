@@ -1,83 +1,23 @@
 version: 2.1
 orbs:
-  node: circleci/node@5
-
-executors:
-  node-executor:
-    docker:
-      - image: cimg/node:18.17.0 # Updated Node.js version
+  # "cypress-io/cypress@3" installs the latest published
+  # version "s.x.y" of the orb. We recommend you then use
+  # the strict explicit version "cypress-io/cypress@3.x.y"
+  # to lock the version and prevent unexpected CI changes
+  cypress: cypress-io/cypress@3.3.1
 
 jobs:
-  test-node:
-    executor: node-executor
+  cypress-run:
+    executor:
+      name: cypress/default
+      node-version: "20.6.0"
     steps:
-      - checkout
-      - node/install-packages:
-          pkg-manager: npm
-      - run:
-          command: npm install jest-junit
-      - run:
-          name: Run tests
-          command: npm run test --ci --runInBand --reporters=default --reporters=jest-junit
-      - store_test_results:
-          path: ./test-results/
-
-  build-node:
-    executor: node-executor
-    steps:
-      - checkout
-      - node/install-packages:
-          pkg-manager: npm
-      - run:
-          command: npm run build
-      - run:
-          name: Create the ~/artifacts directory if it doesn't exist
-          command: mkdir -p ~/artifacts
-      - run:
-          name: Copy artifacts
-          command: cp -R build dist public .output .next .docusaurus ~/artifacts 2>/dev/null || true
-      - store_artifacts:
-          path: ~/artifacts
-          destination: node-build
-
-  cypress-test:
-    executor: node-executor
-    parameters:
-      cypress-command:
-        type: string
-        default: "npx cypress run" # Default command to run Cypress tests
-      start-command:
-        type: string
-        default: "npm run build && npm run start" # Command to start the server
-      working-directory:
-        type: string
-        default: "." # Directory containing the package.json
-    steps:
-      - checkout
-      - run:
-          name: Install Dependencies
-          command: npm install
-      - run:
-          name: Start Server
-          command: |
-            if [ -n "<< parameters.start-command >>" ]; then
-              << parameters.start-command >> &
-            fi
-          background: true
-      - run:
-          name: Wait for Local Server
-          command: npx wait-on http://localhost:3000
-      - run:
-          name: Run Cypress Tests
-          command: << parameters.cypress-command >>
+      - cypress/install
+      - cypress/run-tests:
+          cypress-command: "npx wait-on@latest http://localhost:3000 && npx cypress run"
+          start-command: "npm run build && npm run start"
 
 workflows:
-  build-and-test:
+  build:
     jobs:
-      - test-node
-      - build-node:
-          requires:
-            - test-node
-      - cypress-test:
-          requires:
-            - build-node
+      - cypress-run
